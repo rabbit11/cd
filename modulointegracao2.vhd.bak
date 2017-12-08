@@ -1,0 +1,65 @@
+LIBRARY IEEE;
+USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.STD_LOGIC_ARITH.ALL;
+USE IEEE.STD_LOGIC_SIGNED.ALL;
+
+ENTITY modulointegracao IS
+	PORT (		clr: IN STD_LOGIC;
+				bi: IN STD_LOGIC; 
+				fechar: IN STD_LOGIC;
+				set: IN STD_LOGIC;
+				clock: IN STD_LOGIC;
+				reset: IN STD_LOGIC;
+				s: IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+				Sp: OUT STD_LOGIC; 
+				Sc: OUT STD_LOGIC);
+END modulointegracao;
+
+ARCHITECTURE maquina OF modulointegracao 
+
+COMPONENT Porta
+PORT(s							: IN  STD_LOGIC_VECTOR (3 DOWNTO 0);
+	 ss, clr, enM, enF, fechar	: IN  STD_LOGIC;
+	 Sp, Sc						: OUT STD_LOGIC);
+END COMPONENT;
+
+TYPE mef IS (reset, estadoA, estadoB, estadoC, estadoD);
+SIGNAL estado : mef;
+SIGNAL Sp, Sc, EnM, EnF, s_clr, ss: STD_LOGIC
+--SIGNAL menor, clear: STD_LOGIC;
+BEGIN
+	-- MAQUINA DE ESTADOS
+	PROCESS (clock, reset)
+	BEGIN
+		IF reset = '0' THEN
+			estado <= estadoA;
+		ELSIF clock'EVENT AND clock = '0' THEN 
+			CASE estado IS
+				WHEN estadoA => 
+					IF bi = '1' AND set = '1' AND clr = '0' AND Sp = '1' THEN 
+						estado <= estadoB; 
+					ELSE
+						estado <= estadoA;
+					END IF;
+				WHEN estadoB =>
+					IF Sp = '1' AND bi ='1' AND clr ='1' THEN 
+						estado <= estadoC;
+					ELSIF Sp = '0' THEN
+						estado <= estadoB;
+				WHEN estadoC =>
+					IF Sp = '0' AND bi = '1' AND Sc = '1' THEN
+						estado <= estadoD;
+					ELSIF Sc = '0' THEN 
+						estado <= estadoC;
+				WHEN estadoD => 
+						estado <= estadoA;
+			END CASE;
+		END IF;
+	END PROCESS;
+	-- SAIDAS
+	enM <= bi;
+	enF <= '0' WHEN estado = estadoD OR estado = estadoA ELSE '1';
+	clr <= '1' WHEN estado = estadoD ELSE '0';
+	s <= '1' WHEN estado = estadoC ELSE '0';
+				
+END maquina;
